@@ -13,9 +13,9 @@ In the downloads section, download LogentriesServlet.java and place it in your a
 
 Then add the following 3 lines to your web.xml file in WEB-INF
 
-  <listener>
-    <listener-class>LogentriesServlet</logentries-class>
-  </listener>
+    <listener>
+      <listener-class>LogentriesServlet</logentries-class>
+    </listener>
   
 This simply specifies that it is a Listener rather than a Servlet that will handle web requests.
 
