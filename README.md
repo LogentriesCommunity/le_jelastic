@@ -7,7 +7,7 @@ To setup the Logentries plugin in your Jelastic app, please follow these few ste
 
 
 Setup
------------------------------------
+====================
 
 In the downloads section, download LogentriesServlet.java and place it in your apps src folder along with the other servlets.
 
