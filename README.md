@@ -1,3 +1,5 @@
 
-Logentries support for Jelastic
-===============================
+Logging To Logentries from Jelastic
+===================================
+
+
