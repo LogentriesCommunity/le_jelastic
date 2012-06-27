@@ -25,6 +25,8 @@ Be sure to download the binaries, and place the jar file in the WEB-INF/lib fold
 
 and add it to the buildpath.
 
+Config files
+---------------
 Before deploying your app to Jelastic, download the logentries.cfg file from the Downloads Section
 
 and upload it to your environments home folder through the Jelastic UI.
@@ -33,6 +35,8 @@ If you open this config file, you will see a list of options, currently it conta
 
 Jelastic environment. Pending which environment you are using, remove all other lines.
 
+Create logs on Logentries
+---------------------------
 The last step is to create the logs on Logentries. For this, you must go back to the Logentries UI,
 
 click on the host which you made earlier, create a new log and give it a name representing the Jelastic logfiles.
