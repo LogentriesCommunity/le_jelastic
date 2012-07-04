@@ -48,6 +48,7 @@ choose Token TCP as the Source Type, a token id will be printed, copy and paste 
 where it says FILE_TOKEN beside the appropriate filename. Repeat this step for each log file.
 
 For this plugin to take effect, you need to restart your environment node.
+--------------------------------
 
 Troubleshooting
 ========================
