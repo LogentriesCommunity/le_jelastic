@@ -1,7 +1,7 @@
 Logging To Logentries from Jelastic
 ===================================
 
-You can find Jelastic specific documentation on Logentries at `logentries.com/doc/jelastic`
+You can find official documentation on Logentries at `logentries.com/doc/jelastic`
 
 To setup the Logentries plugin in your Jelastic app, please follow these few steps.
 
@@ -9,27 +9,27 @@ To setup the Logentries plugin in your Jelastic app, please follow these few ste
 Setup
 ====================
 
-In the downloads section, download LogentriesServlet.java and place it in your apps src folder along with the other servlets.
+In the downloads section, download le_jelastic.jar and place it in the /lib folder of your environment on Jelastic.
 
-Then add the following 3 lines to your web.xml file in WEB-INF
+You can find this by clicking the config button on your environments options.
+
+Then using the Jelastic UI, add the following 3 lines to your web.xml. This can either be your global web.xml
+
+found in /server of your environment, or in your apps web.xml found in /webapps/ROOT/WEB-INF/
 
     <listener>
       <listener-class>LogentriesServlet</logentries-class>
     </listener>
-  
-This simply specifies that it is a Listener rather than a Servlet that will handle web requests.
 
 Next you must download the commons.io library which contains the Tailer class used in our plugin.
 
-Be sure to download the binaries, and place the jar file in the WEB-INF/lib folder of your app,
-
-and add it to the buildpath.
+Be sure to download the binaries, and place the jar file in the same /lib folder as le_jelastic.jar
 
 Config files
 ---------------
-Before deploying your app to Jelastic, download the logentries.cfg file from the Downloads Section
+To configure the plugin with your app, download the logentries.cfg file from the Downloads Section
 
-and upload it to your environments home folder through the Jelastic UI.
+and upload it to your environments /home folder through the Jelastic UI.
 
 If you open this config file, you will see a list of options, currently it contains the config for each
 
@@ -47,7 +47,7 @@ choose Token TCP as the Source Type, a token id will be printed, copy and paste 
 
 where it says FILE_TOKEN beside the appropriate filename. Repeat this step for each log file.
 
-Save the changes and upload your app's war file. You will now receive log data on Logentries.
+For this plugin to take effect, you need to restart your environment node.
 
 Troubleshooting
 ========================
