@@ -9,7 +9,7 @@ To setup the Logentries plugin in your Jelastic app, please follow these few ste
 Setup
 ====================
 
-In the downloads section, download le_jelastic.jar and place it in the /lib folder of your environment on Jelastic.
+In the downloads section, download le_jelastic.jar and place it in the /lib folder of your environment via Jelastic UI.
 
 You can find this by clicking the config button on your environments options.
 
