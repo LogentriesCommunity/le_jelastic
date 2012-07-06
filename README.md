@@ -39,17 +39,17 @@ If you open this config file, you will see a list of options, currently it conta
 
 Jelastic environment. Pending which environment you are using, remove all other lines.
 
-Create logs on Logentries
+Create logfiles on Logentries
 ---------------------------
-The last step is to create the logs on Logentries. For this, you must go back to the Logentries UI,
+The last step is to create the logfiless on Logentries. For this, you must go back to the Logentries UI,
 
-click on the host which you made earlier, create a new log and give it a name representing the Jelastic logfiles.
+create a new host with the name Jelastic for example, create a new logfile and give it a name representing 
 
-These names are on the left hand side of the logentries.cfg file. When creating the logfile on Logentries,
+the Jelastic logfiles. These names are on the left hand side of the logentries.cfg file. When creating the 
 
-choose Token TCP as the Source Type, a token id will be printed, copy and paste this into your config file
+logfile on Logentries, choose Token TCP as the Source Type, a token id will be printed, copy and paste this 
 
-where it says FILE_TOKEN beside the appropriate filename. Repeat this step for each log file.
+into your config file where it says FILE_TOKEN beside the appropriate filename. Repeat this step for each log file.
 
 For this plugin to take effect, you need to restart your environment node.
 --------------------------------
