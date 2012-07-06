@@ -23,7 +23,11 @@ found in /server of your environment, or in your apps web.xml found in /webapps/
 
 Next you must download the commons.io library which contains the Tailer class used in our plugin.
 
-Be sure to download the binaries, and place the jar file in the same /lib folder as le_jelastic.jar
+This can be found here
+
+    http://commons.apache.org/io/download_io.cgi
+    
+and place the jar file in the same /lib folder as le_jelastic.jar
 
 Config files
 ---------------
