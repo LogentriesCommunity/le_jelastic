@@ -18,7 +18,7 @@ Then using the Jelastic UI, add the following 3 lines to your web.xml. This can 
 found in /server of your environment, or in your apps web.xml found in /webapps/ROOT/WEB-INF/
 
     <listener>
-      <listener-class>LogentriesServlet</logentries-class>
+      <listener-class>LogentriesServlet</listener-class>
     </listener>
 
 Next you must download the commons.io library which contains the Tailer class used in our plugin.
