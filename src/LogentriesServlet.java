@@ -87,8 +87,6 @@ public class LogentriesServlet implements ServletContextListener {
 	Properties prop;
 	/** Debug flag */
 	boolean debug;
-	/** Calendar used for getting latest date */
-	Calendar cal;
 	/** Number of log files to be tailed */
 	int numFiles;
 	/** Directory of log files for any Jelastic environment */
@@ -152,7 +150,6 @@ public class LogentriesServlet implements ServletContextListener {
 	public void initVars()
 	{
 		/* Initialise variables */
-		cal = Calendar.getInstance();
 		queue = new ArrayBlockingQueue<byte[]>(QUEUE_SIZE);
 		listeners = new LogentriesListener[numFiles];
 		
@@ -239,7 +236,8 @@ public class LogentriesServlet implements ServletContextListener {
 		if(System.getProperty("user.home").contains("glassfish3"))
 			return fileName;
 		
-    cal.setTime(new java.util.Date());
+		Calendar cal = Calendar.getInstance();
+
 		String year = Integer.toString(cal.get(Calendar.YEAR));
 		int monthNum = cal.get(Calendar.MONTH)+1;
 		String month = Integer.toString(monthNum);
@@ -279,41 +277,41 @@ public class LogentriesServlet implements ServletContextListener {
 		
 		@Override
 		public void run() {
-      while (true) {
-        /* Iterate through listeners, make sure they are set to latest files */
-        for(int i = 0; i < listeners.length; ++i)
-        {
-          /* Get filename of file currently being tailed */
-          String tailingNow = listeners[i].file.getName();
+			while (true) {
+				/* Iterate through listeners, make sure they are set to latest files */
+				for(int i = 0; i < listeners.length; ++i)
+				{
+					/* Get filename of file currently being tailed */
+					String tailingNow = listeners[i].file.getName();
 
-          String logName = removeTimestamp(tailingNow);
+					String logName = removeTimestamp(tailingNow);
 
-          /* Add timestamp to get latest possible log filename */
-          String latestName = addTimestamp(logName);
-          dbg("Comparing files: " + tailingNow + " <> " + latestName);
-          /* If already tailing latest file, continue */
-          if(tailingNow.equals(latestName)){
-            continue;
-          }
-          File f = new File(LOG_HOME_DIR + latestName);
-          /* File doesn't exist yet, continue */
-          if(!f.isFile()){
-            continue;
-          }
-          dbg("Updating existing tailer to tail latest file: " + LOG_HOME_DIR + latestName);
-          // Stop thread/tailer that needs to be updated
-          listeners[i].tail.stop();
-          String tempToken = listeners[i].token;
-          // Add new tailer to array in place of old one, with latest file 
-          listeners[i] = new LogentriesListener(tempToken ,LOG_HOME_DIR + latestName);
-        }
-        try {
-          // Sleep for random number between 0 and 10 seconds
-          Thread.sleep(random.nextInt(MAX_DELAY));
-        } catch (InterruptedException e) {
-          // No need to do anything here
-        }
-      }
+					/* Add timestamp to get latest possible log filename */
+					String latestName = addTimestamp(logName);
+					dbg("Comparing files: " + tailingNow + " <> " + latestName);
+					/* If already tailing latest file, continue */
+					if(tailingNow.equals(latestName)){
+						continue;
+					}
+					File f = new File(LOG_HOME_DIR + latestName);
+					/* File doesn't exist yet, continue */
+					if(!f.isFile()){
+						continue;
+					}
+					dbg("Updating existing tailer to tail latest file: " + LOG_HOME_DIR + latestName);
+					// Stop thread/tailer that needs to be updated
+					listeners[i].tail.stop();
+					String tempToken = listeners[i].token;
+					// Add new tailer to array in place of old one, with latest file 
+					listeners[i] = new LogentriesListener(tempToken ,LOG_HOME_DIR + latestName);
+				}
+				try {
+					// Sleep for random number between 0 and 10 seconds
+					Thread.sleep(random.nextInt(MAX_DELAY));
+				} catch (InterruptedException e) {
+					// No need to do anything here
+				}
+			}
 		}
 	}
 	
@@ -370,6 +368,7 @@ public class LogentriesServlet implements ServletContextListener {
 				
 				//If its full, remove latest item and try again
 				if(is_full){
+					dbg("Queue is full. Data: " + line);
 					queue.poll();
 					queue.offer(data);
 				}
@@ -486,7 +485,7 @@ public class LogentriesServlet implements ServletContextListener {
 					// Send data, reconnect if needed
 					while (true) {
 						try {
-							stream.write( data);
+							stream.write(data);
 							stream.flush();
 						} catch (IOException e) {
 							// Reopen the lost connection
