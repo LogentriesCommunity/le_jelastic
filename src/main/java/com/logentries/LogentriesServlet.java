@@ -1,5 +1,3 @@
-
-
 //
 // Copyright (c) 2010-2012 Logentries, Jlizard
 //
@@ -47,35 +45,38 @@ import java.util.Enumeration;
 import java.util.Properties;
 import java.util.Random;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import org.apache.commons.io.input.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-//By extending ServletContextListener this class can execute application-wide background thread(s)
-//Will run in the background when app is deployed
+/**
+ * By extending ServletContextListener this class can execute application-wide background thread(s)
+ * Will run in the background when app is deployed
+ */
 public class LogentriesServlet implements ServletContextListener {
 
-	/*
-	 *  CONSTANTS
-	 */
+	private static final Logger logger = LoggerFactory.getLogger(LogentriesServlet.class);
 
 	/** Size of the internal event queue. */
-	static final int QUEUE_SIZE = 32768;
+	private static final int QUEUE_SIZE = 32768;
 	/** Logentries API Server address */
-	static final String LE_API = "api.logentries.com";
+	private static final String LE_API = "api.logentries.com";
 	/** Default port number for token-based logging on Logentries API server. */
-	static final int LE_PORT = 10000;
+	private static final int LE_PORT = 10000;
 	/** Minimal delay between attempts to reconnect in milliseconds. */
-	static final int MIN_DELAY = 100;
+	private static final int MIN_DELAY = 100;
 	/** Maximal delay between attempts to reconnect in milliseconds. */
-	static final int MAX_DELAY = 10000;
+	private static final int MAX_DELAY = 10000;
 	/** Minimal delay between checks for latest log files */
-	static final int MIN_CHECK_DELAY = 1000;
+	private static final int MIN_CHECK_DELAY = 1000;
 	/** LE appender signature - used for debugging messages. */
-	static final String LE = "LE: ";
+	private static final String LE = "LE: ";
 	/** UTF-8 output character set */
-	static final Charset UTF8 = Charset.forName("UTF-8");
+	private static final Charset UTF8 = Charset.forName("UTF-8");
 
 	/** Array of Listeners to be used by Tailers*/
 	private LogentriesListener[] listeners;
@@ -85,57 +86,50 @@ public class LogentriesServlet implements ServletContextListener {
 	private Thread t_LogChecker;
 
 	/** Message Queue  */
-	ArrayBlockingQueue<byte[]> queue;
+	private ArrayBlockingQueue<byte[]> queue;
 	/** Properties File Reader */
-	Properties prop;
-	/** Debug flag */
-	boolean debug;
+	private Properties prop;
 	/** Number of log files to be tailed */
-	int numFiles;
+	private int numFiles;
 	/** Directory of log files for any Jelastic environment */
-	String LOG_HOME_DIR;
+	private String LOG_HOME_DIR;
 	/** Separating character in Jelastic environment timestamps, Jetty different from Tomcat */
-	String timestamp_sep;
+	private String timestamp_sep;
 	/** Indicating whether context has started */
-	boolean started;
+	private final AtomicBoolean started;
+
+	public LogentriesServlet() {
+		this.started = new AtomicBoolean();
+	}
 
 	@Override
 	public void contextInitialized(ServletContextEvent event) {
-
-		try{
+		try {
 			readConfig();
-		}catch (Exception e){
-			dbg("logentries.cfg failed to load");
+		} catch (Exception e) {
+			logger.warn("logentries.cfg failed to load");
 			return;
 		}
 
 		initVars();
 
-		if(!started)
+		if(!started.get())
 		{
 			startListeners();
 
 			startHelpers();
 		}
 
-		started = true;
+		started.set(true);
 	}
 
 	@Override
 	public void contextDestroyed(ServletContextEvent event) {
-
 		shutdownAll();
-		started = false;
+		started.set(false);
 	}
 
-	public void dbg(String msg)
-	{
-		if(debug)
-			System.err.println(LE + msg);
-	}
-
-	public void readConfig() throws Exception
-	{
+	public void readConfig() throws Exception {
 		prop = new Properties();
 
 		/* Load logentries config file */
@@ -150,8 +144,7 @@ public class LogentriesServlet implements ServletContextListener {
 		numFiles = prop.size();
 	}
 
-	public void initVars()
-	{
+	private void initVars() {
 		/* Initialise variables */
 		queue = new ArrayBlockingQueue<byte[]>(QUEUE_SIZE);
 		listeners = new LogentriesListener[numFiles];
@@ -159,7 +152,7 @@ public class LogentriesServlet implements ServletContextListener {
 		/* Set LOG_HOME_DIR for any of the Jelastic environments */
 		String dir = System.getProperty("user.home");
 		LOG_HOME_DIR = dir.substring(0, dir.lastIndexOf("/"))+"/logs/";
-		dbg("LOG_HOME set to " + LOG_HOME_DIR);
+		logger.debug("LOG_HOME set to " + LOG_HOME_DIR);
 
 		/* Jelastic environments have different format timestamps in their logfiles
 		 *
@@ -171,8 +164,7 @@ public class LogentriesServlet implements ServletContextListener {
 		timestamp_sep = dir.contains("jetty") ? "_" : "-";
 	}
 
-	public void startListeners()
-	{
+	public void startListeners() {
 		/* Only logfile - token pairs left in prop */
 		Enumeration<Object> keys = prop.keys();
 
@@ -192,8 +184,7 @@ public class LogentriesServlet implements ServletContextListener {
 		}
 	}
 
-	public void startHelpers()
-	{
+	public void startHelpers() {
 		/* Start thread for connecting to Logentries and polling message queue */
 		t_SockAppender = new Thread(new LogentriesSocketAppender());
 		t_SockAppender.setName("Logentries Socket Appender");
@@ -211,8 +202,7 @@ public class LogentriesServlet implements ServletContextListener {
 		}
 	}
 
-	public void shutdownAll()
-	{
+	public void shutdownAll() {
 		/* Shutting down, stop all threads */
 		for(int i = 0; i < listeners.length; ++i)
 		{
@@ -234,8 +224,7 @@ public class LogentriesServlet implements ServletContextListener {
 	 * @return
 	 */
 
-	public String addTimestamp(String fileName)
-	{
+	public String addTimestamp(String fileName) {
 		if(System.getProperty("user.home").contains("glassfish3"))
 			return fileName;
 
@@ -265,8 +254,7 @@ public class LogentriesServlet implements ServletContextListener {
 	 * @param fileName
 	 * @return
 	 */
-	public String removeTimestamp(String fileName)
-	{
+	public String removeTimestamp(String fileName) {
 		String[] temp = fileName.split("\\.");
 
 		return temp[0] + "." + temp[2];
@@ -274,8 +262,7 @@ public class LogentriesServlet implements ServletContextListener {
 
 	/* Internal Classes */
 	/* Separate thread running in background to ensure that latest log files are being tailed */
-	class LogChecker implements Runnable
-	{
+	class LogChecker implements Runnable {
 		final Random random = new Random();
 
 		@Override
@@ -291,7 +278,7 @@ public class LogentriesServlet implements ServletContextListener {
 
 					/* Add timestamp to get latest possible log filename */
 					String latestName = addTimestamp(logName);
-					dbg("Comparing files: " + tailingNow + " <> " + latestName);
+					logger.debug("Comparing files: " + tailingNow + " <> " + latestName);
 					/* If already tailing latest file, continue */
 					if(tailingNow.equals(latestName)){
 						continue;
@@ -301,7 +288,7 @@ public class LogentriesServlet implements ServletContextListener {
 					if(!f.isFile()){
 						continue;
 					}
-					dbg("Updating existing tailer to tail latest file: " + LOG_HOME_DIR + latestName);
+					logger.debug("Updating existing tailer to tail latest file: " + LOG_HOME_DIR + latestName);
 					// Stop thread/tailer that needs to be updated
 					listeners[i].tail.stop();
 					String tempToken = listeners[i].token;
@@ -320,25 +307,23 @@ public class LogentriesServlet implements ServletContextListener {
 
 
 	/** Tails a single log file, controlled by its own thread */
-	class LogentriesListener extends TailerListenerAdapter
-	{
+	class LogentriesListener extends TailerListenerAdapter {
 		private Tailer tail;
 		private File file;
 		public Thread thread;
 		/* Token that relates this log file to its destination on Logentries */
 		private String token;
 
-		public LogentriesListener(String token, String fileName)
-		{
+		public LogentriesListener(String token, String fileName) {
 			this.token = token;
 			this.file = new File(fileName);
 			if(!file.exists()){
 				try {
 					file.createNewFile();
 				} catch (IOException e) {
-					dbg("Unable to create file at start-up: " + fileName);
+					logger.error("Unable to create file at start-up: {}", fileName, e);
 				}
-				dbg("Created new file at start-up: " + fileName);
+				logger.trace("Created new file at start-up: " + fileName);
 			}
 			this.thread = new Thread(new Tailer(file, this, 1, true));
 			this.thread.setName(fileName);
@@ -351,40 +336,34 @@ public class LogentriesServlet implements ServletContextListener {
 			this.tail = tailer;
 		}
 
-		public void fileNotFound()
-		{
-			dbg("LogFile To Be Tailed Not Found - "+tail.getFile().getName());
+		public void fileNotFound() {
+			logger.warn("LogFile To Be Tailed Not Found - " + tail.getFile().getName());
 		}
 
-		public void fileRotated()
-		{
+		public void fileRotated() {
 			//Tailer class handles this, tries to re-open file
 		}
 
 		//Called when the Tailer detects a new line
-		public void handle(String line)
-		{
-			try{
+		public void handle(String line) {
+			try {
 				byte[] data = (token+line+'\n').getBytes(UTF8);
 
 				boolean is_full = !queue.offer(data);
 
 				//If its full, remove latest item and try again
-				if(is_full){
-					dbg("Queue is full. Data: " + line);
+				if (is_full){
+					logger.error("Queue is full. Data: " + line);
 					queue.poll();
 					queue.offer(data);
 				}
-
-			}catch(Exception e){
-				if(debug)
-					dbg("Unable to send message to Logentries");
+			} catch(Exception e) {
+				logger.error("Unable to send message to Logentries");
 			}
 		}
 
-		public void handle(Exception ex)
-		{
-			dbg(ex.toString());
+		public void handle(Exception ex) {
+			logger.error("Error: ", ex);
 		}
 	}
 
@@ -402,15 +381,13 @@ public class LogentriesServlet implements ServletContextListener {
 		 * @throws IOException
 		 */
 		void openConnection() throws IOException {
-			if(debug)
-				dbg( "Reopening connection to Logentries API server " + LE_API + ":" + LE_PORT);
+			logger.info("Reopening connection to Logentries API server " + LE_API + ":" + LE_PORT);
 
 			// Open physical connection
 			socket = new Socket(LE_API, LE_PORT);
 			stream = socket.getOutputStream();
 
-			if(debug)
-				dbg("Connection established");
+			logger.debug("Connection established");
 		}
 
 		/**
@@ -431,20 +408,17 @@ public class LogentriesServlet implements ServletContextListener {
 					// Success, leave
 					return;
 				} catch (IOException e) {
-					// Get information if in debug mode
-					if (debug) {
-						dbg("Unable to connect to Logentries");
-						e.printStackTrace();
-					}
+					logger.warn("Unable to connect to Logentries", e);
 				}
 
 				// Wait between connection attempts
 				root_delay *= 2;
-				if (root_delay > MAX_DELAY)
+				if (root_delay > MAX_DELAY) {
 					root_delay = MAX_DELAY;
-				int wait_for = root_delay + random.nextInt( root_delay);
-				dbg( "Waiting for " + wait_for + "ms");
-				Thread.sleep( wait_for);
+				}
+				int wait_for = root_delay + random.nextInt(root_delay);
+				logger.info("Waiting for " + wait_for + "ms");
+				Thread.sleep(wait_for);
 			}
 		}
 
@@ -500,7 +474,7 @@ public class LogentriesServlet implements ServletContextListener {
 				}
 			} catch (InterruptedException e) {
 				// We got interrupted, stop
-				dbg("Asynchronous socket writer interrupted");
+				logger.warn("Asynchronous socket writer interrupted", e);
 			}
 
 			closeConnection();
