@@ -2,7 +2,6 @@ Logging To Logentries from Jelastic
 ===================================
 
 *This plug in will no longer be officially supported or maintained by Logentries.<br>
-If you would be interested in maintaining this project, please contact support@logentries.com.*
 
 You can find official documentation on Logentries at <https://logentries.com/doc/jelastic>
 
